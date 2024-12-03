@@ -19,8 +19,9 @@ package backend
 type Option func(*Options)
 
 type Options struct {
-	plainHTTP bool
-	proxy     string
+	plainHTTP  bool
+	proxy      string
+	outputPath string
 }
 
 // WithPlainHTTP sets the plain HTTP option.
@@ -34,5 +35,12 @@ func WithPlainHTTP() Option {
 func WithProxy(proxy string) Option {
 	return func(opts *Options) {
 		opts.proxy = proxy
+	}
+}
+
+// WithOutputPath sets the output path option.
+func WithOutputPath(outputPath string) Option {
+	return func(opts *Options) {
+		opts.outputPath = outputPath
 	}
 }
