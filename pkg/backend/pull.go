@@ -23,9 +23,12 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"path/filepath"
 
+	"github.com/CloudNativeAI/modctl/pkg/archiver"
 	"github.com/CloudNativeAI/modctl/pkg/storage"
 
+	modelspec "github.com/CloudNativeAI/model-spec/specs-go/v1"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"oras.land/oras-go/v2/registry/remote"
 	"oras.land/oras-go/v2/registry/remote/auth"
@@ -124,6 +127,13 @@ func (b *backend) Pull(ctx context.Context, target string, opts ...Option) error
 		return fmt.Errorf("failed to pull manifest to local: %w", err)
 	}
 
+	// export the target model artifact to the output directory if needed.
+	if options.outputPath != "" {
+		if err := exportModelArtifact(ctx, dst, manifest, repo, options.outputPath); err != nil {
+			return fmt.Errorf("failed to export the artifact to the output directory: %w", err)
+		}
+	}
+
 	return nil
 }
 
@@ -157,6 +167,33 @@ func pullIfNotExist(ctx context.Context, pb *ProgressBar, prompt string, src *re
 	} else {
 		if _, _, err := dst.PushBlob(ctx, repo, pb.Add(prompt, desc, content)); err != nil {
 			return err
+		}
+	}
+
+	return nil
+}
+
+// exportModelArtifact exports the target model artifact to the output directory, which will open the artifact and extract to restore the orginal repo structure.
+func exportModelArtifact(ctx context.Context, store storage.Storage, manifest ocispec.Manifest, repo, outputPath string) error {
+	for _, layer := range manifest.Layers {
+		// pull the blob from the storage.
+		reader, err := store.PullBlob(ctx, repo, layer.Digest.String())
+		if err != nil {
+			return fmt.Errorf("failed to pull the blob from storage: %w", err)
+		}
+
+		defer reader.Close()
+
+		targetPath := outputPath
+		// get the original filepath in order to restore the original repo structure.
+		originalFilePath := layer.Annotations[modelspec.AnnotationFilepath]
+		if dir := filepath.Dir(originalFilePath); dir != "" {
+			targetPath = filepath.Join(targetPath, dir)
+		}
+
+		// untar the blob to the output directory.
+		if err := archiver.Untar(reader, targetPath); err != nil {
+			return fmt.Errorf("failed to untar the blob to output directory: %w", err)
 		}
 	}
 

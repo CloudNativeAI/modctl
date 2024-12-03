@@ -47,6 +47,7 @@ func init() {
 	flags := pullCmd.Flags()
 	flags.BoolVar(&pullConfig.PlainHTTP, "plain-http", false, "use plain HTTP instead of HTTPS")
 	flags.StringVar(&pullConfig.Proxy, "proxy", "", "use proxy for the pull operation")
+	flags.StringVar(&pullConfig.OutputPath, "output", "", "specify the output path for exporting the model artifact")
 
 	if err := viper.BindPFlags(flags); err != nil {
 		panic(fmt.Errorf("bind cache pull flags to viper: %w", err))
@@ -71,6 +72,10 @@ func runPull(ctx context.Context, target string) error {
 
 	if pullConfig.Proxy != "" {
 		opts = append(opts, backend.WithProxy(pullConfig.Proxy))
+	}
+
+	if pullConfig.OutputPath != "" {
+		opts = append(opts, backend.WithOutputPath(pullConfig.OutputPath))
 	}
 
 	if err := b.Pull(ctx, target, opts...); err != nil {
