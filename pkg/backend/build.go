@@ -170,7 +170,7 @@ func (b *backend) getProcessors(modelfile modelfile.Modelfile) []processor.Proce
 	}
 
 	if docs := modelfile.GetDocs(); len(docs) > 0 {
-		processors = append(processors, processor.NewDocProcessor(b.store, modelspec.MediaTypeModelDoc, docs))
+		processors = append(processors, processor.NewDocProcessor(b.store, modelspec.MediaTypeModelDocRaw, docs))
 	}
 
 	return processors

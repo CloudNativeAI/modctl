@@ -38,6 +38,7 @@ type Pull struct {
 	ExtractFromRemote bool
 	Hooks             PullHooks
 	ProgressWriter    io.Writer
+	DragonflyEndpoint string
 }
 
 func NewPull() *Pull {
@@ -50,6 +51,7 @@ func NewPull() *Pull {
 		ExtractFromRemote: false,
 		Hooks:             &emptyPullHook{},
 		ProgressWriter:    os.Stdout,
+		DragonflyEndpoint: "",
 	}
 }
 
@@ -63,6 +65,11 @@ func (p *Pull) Validate() error {
 		if p.ExtractDir == "" {
 			return fmt.Errorf("the extract dir must be specified when enabled extract from remote")
 		}
+	}
+
+	// DragonflyEndpoint only can work with ExtractFromRemote scenario.
+	if p.DragonflyEndpoint != "" && !p.ExtractFromRemote {
+		return fmt.Errorf("dragonfly endpoint only can work with extract from remote scenario")
 	}
 
 	return nil

@@ -49,6 +49,7 @@ type progressBar struct {
 // NewProgressBar creates a new progress bar.
 func NewProgressBar(writers ...io.Writer) *ProgressBar {
 	opts := []mpbv8.ContainerOption{
+		mpbv8.PopCompletedMode(),
 		mpbv8.WithAutoRefresh(),
 		mpbv8.WithWidth(60),
 		mpbv8.WithRefreshRate(300 * time.Millisecond),
@@ -103,7 +104,20 @@ func (p *ProgressBar) Add(prompt, name string, size int64, reader io.Reader) io.
 	p.bars[name] = newBar
 	p.mu.Unlock()
 
-	return newBar.ProxyReader(reader)
+	if reader != nil {
+		return newBar.ProxyReader(reader)
+	}
+
+	return reader
+}
+
+// Get returns the progress bar.
+func (p *ProgressBar) Get(name string) *progressBar {
+	p.mu.RLock()
+	bar := p.bars[name]
+	p.mu.RUnlock()
+
+	return bar
 }
 
 // Complete completes the progress bar.
